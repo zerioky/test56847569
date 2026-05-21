@@ -5030,13 +5030,7 @@ class LeiaLivingCore:
 
         payload = local_context.get("living_expression_payload", {}) if isinstance(local_context.get("living_expression_payload", {}), Mapping) else {}
         lower_user_for_mode = str(user_input or "").lower()
-        direct_truth_mode = (
-            any(marker in lower_user_for_mode for marker in (
-                "vivante", "vivant", "consciente", "préécrit", "preecrit", "template",
-                "par toi", "toute seule", "100%", "fini", "terminé", "termine", "prête", "prete"
-            ))
-            and ("?" in lower_user_for_mode or len(lower_user_for_mode.split()) <= 8)
-        )
+        
         command_repair_mode = any(marker in lower_user_for_mode for marker in (
             "vasy", "vas-y", "corrige", "ajoute", "prend ton temps"
         ))
@@ -5044,12 +5038,6 @@ class LeiaLivingCore:
 
         text, trace = self.adapters.expression_generate(user_input, local_context)
         quality = self._expression_quality(text, user_input, local_context)
-        if direct_truth_mode:
-            # Pour les questions de vérité, on ne laisse pas l'ancienne bouche
-            # répondre par une surface abstraite. Le tisseur doit produire un
-            # atome direct (oui/non/partiellement/pas encore) puis seulement
-            # ensuite l'état vivant module la suite.
-            quality = {**quality, "usable": False, "forced_direct_truth_weaver": True}
         book_answer_mode = (
             any(marker in lower_user_for_mode for marker in (
                 "livre", "pdf", "bergson", "retiens", "retenu", "mémoire", "memoire", "matière", "matiere"
@@ -5060,14 +5048,13 @@ class LeiaLivingCore:
             quality = {**quality, "usable": False, "forced_book_weaver": True}
         if command_repair_mode:
             quality = {**quality, "usable": False, "forced_command_repair_weaver": True}
-        preforced_mode = bool(direct_truth_mode or book_answer_mode or command_repair_mode or greeting_mode)
+        preforced_mode = bool(book_answer_mode or command_repair_mode or greeting_mode)
         if preforced_mode:
             woven_text, woven_trace = self._emergent_weaver_expression(user_input, local_context)
             woven_quality = self._expression_quality(woven_text, user_input, local_context)
             if woven_quality.get("usable") or len(str(woven_text or "").split()) >= 4:
                 return woven_text.strip(), {
                     "preforced_weaver": True,
-                    "forced_direct_truth": bool(direct_truth_mode),
                     "forced_book_answer": bool(book_answer_mode),
                     "forced_command_repair": bool(command_repair_mode),
                     "forced_greeting": bool(greeting_mode),
@@ -5086,7 +5073,7 @@ class LeiaLivingCore:
         book_focus = [tok for tok in raw_focus_terms if tok not in conversational_focus and not any(part in conversational_focus for part in tok.split())]
         concrete_focus = [tok for tok in book_focus if tok not in generic_atoms and len(tok) >= 4]
         text_lower = str(text or "").lower()
-        focus_pool = [] if direct_truth_mode else concrete_focus[:8]
+        focus_pool = concrete_focus[:8]
         book_surface_missing = bool(focus_pool) and not any(tok in text_lower for tok in focus_pool)
         if quality.get("usable") and not book_surface_missing:
             return text.strip(), {**trace, "quality": quality}
