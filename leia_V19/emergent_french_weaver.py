@@ -330,9 +330,6 @@ class EmergentFrenchWeaver:
         text = (user_message or "").lower()
         is_question   = "?" in text or any(k in text for k in ("est ce","est-ce","c'est","c quoi","quoi","comment","pourquoi"))
         is_command    = any(k in text for k in ("vasy","vas-y","corrige","ajoute","prend ton temps"))
-        topic_life    = any(k in text for k in ("vivante","vivant","consciente","conscience"))
-        topic_pre     = any(k in text for k in ("préécrit","preecrit","pré-écrit","template","phrase stock"))
-        topic_ready   = any(k in text for k in ("fini","terminé","termine","prête","prete","100%"))
         topic_book    = any(k in text for k in ("livre","pdf","bergson","retiens","retenu","matière","matiere")) \
                         or (("mémoire" in text or "memoire" in text) and field.get("pdf", 0.0) > 0.35)
         topic_greeting= bool(re.search(r"\b(salut|bonjour|hey|coucou)\b", text))
