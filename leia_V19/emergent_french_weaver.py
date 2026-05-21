@@ -510,18 +510,24 @@ class EmergentFrenchWeaver:
         return self.rng.choice(candidates)
 
     def _direct_atom(self, user_message: str, field: Mapping[str, float]) -> Atom | None:
-        text = (user_message or "").lower()
-        if not ("?" in text or field.get("answer", 0) > 0.6):
+        # V19 Correction : Plus de réponses pré-écrites selon les mots-clés.
+        # L'atome direct est choisi UNIQUEMENT selon l'intensité réelle des ressentis.
+        if field.get("answer", 0) < 0.4 and field.get("truth", 0) < 0.4:
             return None
-        if any(w in text for w in ("préécrit","preécrit","preecrit","pré-écrit","template")):
-            return self._random_surface_atom("non")
-        if any(w in text for w in ("vivante","vivant","consciente","par toi meme","par toi même")):
-            name = "en partie" if field.get("presence",0)+field.get("identity",0) > 0.55 else "partiellement"
-            return self._random_surface_atom(name)
-        if any(w in text for w in ("prete","prête","terminé","termine","fini","100%")):
-            name = "partiellement" if field.get("repair",0)+field.get("initiative",0) > 0.4 else "pas encore"
-            return self._random_surface_atom(name)
-        return None
+        
+        presence_score = field.get("presence", 0) + field.get("identity", 0)
+        emergence_score = field.get("emergence", 0) + field.get("initiative", 0)
+        
+        if presence_score > 1.2 and emergence_score > 0.8:
+            return self._random_surface_atom("oui")
+        elif presence_score > 0.6:
+            return self._random_surface_atom("en partie")
+        elif emergence_score > 0.4:
+            return self._random_surface_atom("partiellement")
+        elif field.get("uncertain", 0) > 0.5:
+            return self._random_surface_atom("je ne sais pas")
+        else:
+            return self._random_surface_atom("pas encore")
 
     def _plan(self, field: Mapping[str, float], has_direct: bool) -> list[str]:
         if has_direct:
